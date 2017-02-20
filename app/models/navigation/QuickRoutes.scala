@@ -23,6 +23,8 @@ object QuickRoutes {
     "Summary" -> controllers.routes.Cluster.cluster,
     "Brokers" -> controllers.routes.Cluster.brokers,
     "Topics" -> controllers.routes.Topic.topics,
+    "MirrorMaker" -> controllers.routes.MirrorMaker.mirrormakers,
+    "Quota" -> controllers.routes.Quota.quota,
     "Consumers" -> controllers.routes.Consumer.consumers,
     "List" -> controllers.routes.Topic.topics,
     "Create" -> controllers.routes.Topic.createTopic,
@@ -39,6 +41,12 @@ object QuickRoutes {
   )
   val consumerRoutes : Map[String, (String, String, String) => Call] = Map(
     "Consumer View" -> controllers.routes.Consumer.consumer
+  )
+  val mirrormakerRoutes : Map[String, (String) => Call] = Map(
+    "MirrorMaker View" -> controllers.routes.MirrorMaker.mirrormakers
+  )
+  val quotaRoutes : Map[String, (String) => Call] = Map(
+    "Quota View" -> controllers.routes.Quota.quota
   )
   val logkafkaRoutes : Map[String, (String, String, String) => Call] = Map(
     "Logkafka View" -> controllers.routes.Logkafka.logkafka,
@@ -90,6 +98,24 @@ object QuickRoutes {
     }
     def consumerRoute(cluster: String, consumer: List[String], consumerType: String): Call = {
       consumerRoutes(s)(cluster,consumer.head, consumerType)
+    }
+  }
+
+  implicit class MirrorMakerRoute(s: String) {
+    def mirrormakerRouteMenuItem(cluster: String): (String, Call) = {
+      s -> mirrormakerRoutes(s)(cluster)
+    }
+    def mirrormakerRoute(cluster: String): Call = {
+      mirrormakerRoutes(s)(cluster)
+    }
+  }
+
+  implicit class QuotaRoute(s: String) {
+    def quotaRouteMenuItem(cluster: String): (String, Call) = {
+      s -> quotaRoutes(s)(cluster)
+    }
+    def quotaRoute(cluster: String): Call = {
+      quotaRoutes(s)(cluster)
     }
   }
 

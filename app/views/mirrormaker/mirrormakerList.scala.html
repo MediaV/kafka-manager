@@ -1,0 +1,25 @@
+@*
+* Copyright 2015 Yahoo Inc. Licensed under the Apache License, Version 2.0
+* See accompanying LICENSE file.
+*@
+@import scala.collection.mutable.ArrayBuffer
+@(cluster:String, errorOrMirrorMaker: ArrayBuffer[Option[kafka.manager.model.ActorModel.MirrorMakerIdentity]]
+)(implicit af: features.ApplicationFeatures, messages: play.api.i18n.Messages, menus: models.navigation.Menus)
+
+@theMenu = {
+    @views.html.navigation.clusterMenu(cluster,"MirrorMaker","List",
+        menus.clusterMenus(cluster)(kafka.manager.features.ClusterFeatures.default))
+}
+
+@main(
+    "MirrorMaker List",
+    menu = theMenu,
+    breadcrumbs=views.html.navigation.breadCrumbs(models.navigation.BreadCrumbs.withViewAndCluster("MirrorMaker",cluster)),
+    scripts=null) {
+    <div class="col-md-12">
+        <div class="panel panel-default">
+            <div class="panel-heading"><h3>MirrorMaker</h3></div>
+            @views.html.mirrormaker.mirrormakerListContent(cluster, errorOrMirrorMaker)
+        </div>
+    </div>
+}

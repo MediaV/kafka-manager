@@ -1,0 +1,25 @@
+@*
+* Copyright 2015 Yahoo Inc. Licensed under the Apache License, Version 2.0
+* See accompanying LICENSE file.
+*@
+@import scala.collection.mutable.ArrayBuffer
+@(cluster:String, errorOrQuota: ArrayBuffer[Option[kafka.manager.model.ActorModel.QuotaIdentity]]
+)(implicit af: features.ApplicationFeatures, messages: play.api.i18n.Messages, menus: models.navigation.Menus)
+
+@theMenu = {
+    @views.html.navigation.clusterMenu(cluster,"Quota","List",
+        menus.clusterMenus(cluster)(kafka.manager.features.ClusterFeatures.default))
+}
+
+@main(
+    "Quota List",
+    menu = theMenu,
+    breadcrumbs=views.html.navigation.breadCrumbs(models.navigation.BreadCrumbs.withViewAndCluster("Quota",cluster)),
+    scripts=null) {
+    <div class="col-md-12">
+        <div class="panel panel-default">
+            <div class="panel-heading"><h3>Quota</h3></div>
+            @views.html.quota.quotaListContent(cluster, errorOrQuota)
+        </div>
+    </div>
+}

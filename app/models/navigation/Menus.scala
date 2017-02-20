@@ -55,7 +55,15 @@ class Menus(implicit applicationFeatures: ApplicationFeatures) {
   private[this] def consumersMenu(cluster: String) : Option[Menu] = {
     Option("Consumers".clusterMenu(cluster))
   }
-  
+
+  private[this] def mirrormakerMenu(cluster: String) : Option[Menu] = {
+    Option("MirrorMaker".clusterMenu(cluster))
+  }
+
+  private[this] def quotaMenu(cluster: String) : Option[Menu] = {
+    Option("Quota".clusterMenu(cluster))
+  }
+
   private[this] def logKafkaMenu(cluster: String, 
                                  clusterFeatures: ClusterFeatures) : Option[Menu] = {
     if (clusterFeatures.features(KMLogKafkaFeature)) {
@@ -75,6 +83,8 @@ class Menus(implicit applicationFeatures: ApplicationFeatures) {
       preferredReplicaElectionMenu(cluster),
       reassignPartitionsMenu(cluster),
       consumersMenu(cluster),
+      mirrormakerMenu(cluster),
+      quotaMenu(cluster),
       logKafkaMenu(cluster, clusterFeatures)
     ).flatten
   }

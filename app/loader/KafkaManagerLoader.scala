@@ -15,6 +15,7 @@ import play.api.i18n.I18nComponents
 import play.api.routing.Router
 import router.Routes
 import controllers.BasicAuthenticationFilter
+import play.api.db.{DefaultDBApi, HikariCPComponents}
 
 
 /**
@@ -40,22 +41,26 @@ class ApplicationComponents(context: Context) extends BuiltInComponentsFromConte
   private[this] lazy val kafkaStateCheckC = new controllers.api.KafkaStateCheck(messagesApi, kafkaManagerContext)
   private[this] lazy val assetsC = new controllers.Assets(httpErrorHandler)
   private[this] lazy val webJarsAssetsC = new controllers.WebJarAssets(httpErrorHandler, context.initialConfiguration, context.environment)
+  private[this] lazy val mirrorMakerC = new controllers.MirrorMaker(messagesApi, kafkaManagerContext)
+  private[this] lazy val quotaC = new controllers.Quota(messagesApi, kafkaManagerContext)
 
 
   override lazy val httpFilters = Seq(BasicAuthenticationFilter(context.initialConfiguration))
 
 
   override val router: Router = new Routes(
-    httpErrorHandler, 
+    httpErrorHandler,
     applicationC, 
     clusterC, 
-    topicC, 
-    logKafkaC, 
+    topicC,
+    logKafkaC,
     consumerC, 
     preferredReplicaElectionC,
     reassignPartitionsC, 
     kafkaStateCheckC, 
     assetsC,
-    webJarsAssetsC
+    webJarsAssetsC,
+    mirrorMakerC,
+    quotaC
   ).withPrefix(context.initialConfiguration.getString("play.http.context").orNull)
 }

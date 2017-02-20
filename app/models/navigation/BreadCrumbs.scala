@@ -45,6 +45,9 @@ object BreadCrumbs {
       BCDynamicNamedLink(identity,"Summary".clusterRoute),
       "Brokers".clusterRouteBreadCrumb),
     "Topics" -> IndexedSeq("Clusters".baseRouteBreadCrumb,BCDynamicNamedLink(identity,"Summary".clusterRoute)),
+    // todo
+    "MirrorMaker" -> IndexedSeq("Clusters".baseRouteBreadCrumb,BCDynamicNamedLink(identity,"Summary".clusterRoute)),
+    "Quota" -> IndexedSeq("Clusters".baseRouteBreadCrumb,BCDynamicNamedLink(identity,"Summary".clusterRoute)),
     "Consumers" -> IndexedSeq("Clusters".baseRouteBreadCrumb,BCDynamicNamedLink(identity,"Summary".clusterRoute)),
     "Create Topic" -> IndexedSeq(
       "Clusters".baseRouteBreadCrumb,

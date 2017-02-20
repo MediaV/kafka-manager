@@ -18,7 +18,12 @@ assemblyMergeStrategy in assembly := {
   case other => (assemblyMergeStrategy in assembly).value(other)
 }
 
+resolvers += "scalaz-bintray" at "http://dl.bintray.com/scalaz/releases"
+
 libraryDependencies ++= Seq(
+  jdbc, cache, ws, specs2 % Test,
+  "mysql" % "mysql-connector-java" % "5.1.18",
+  "com.mchange" % "c3p0" % "0.9.2.1",
   "com.typesafe.akka" %% "akka-actor" % "2.3.14",
   "com.typesafe.akka" %% "akka-slf4j" % "2.3.14",
   "com.google.code.findbugs" % "jsr305" % "2.0.1",

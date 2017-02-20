@@ -70,3 +70,5 @@ GET    /assets/*file                                        controllers.Assets.a
 
 # WebJars
 GET    /webjars/*file                                       controllers.WebJarAssets.at(file)
+GET    /clusters/:c/mirrormaker                             controllers.MirrorMaker.mirrormakers(c:String)
+GET    /clusters/:c/quota                                   controllers.Quota.quota(c:String)

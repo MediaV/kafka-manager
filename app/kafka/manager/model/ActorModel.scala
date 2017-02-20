@@ -631,6 +631,23 @@ import scala.language.reflectiveCalls
 
   }
 
+  case class MirrorMakerIdentity(consumerGroup:String,
+                                 fromCluster:String,
+                                 toCluster:String,
+                                 topic:String,
+                                 totalLag:Long,
+                                 partitionMaxLag:Long,
+                                 processCount:Long,
+                                 updateTime:String)
+
+  case class QuotaIdentity(clientId:String,
+                                 clientType:String,
+                                 clusterName:String,
+                                 priority:Int,
+                                 quotaConf:Long,
+                                 quotaReal:Long,
+                                 updateTime:String)
+
   case class BrokerMessagesPerSecCount(date: DateTime,
                                        count: Long)
 

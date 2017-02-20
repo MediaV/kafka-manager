@@ -1,0 +1,35 @@
+@*
+* Copyright 2015 Yahoo Inc. Licensed under the Apache License, Version 2.0
+* See accompanying LICENSE file.
+*@
+@import scala.collection.mutable.ArrayBuffer
+@(cluster: String,
+        quotalist: ArrayBuffer[Option[kafka.manager.model.ActorModel.QuotaIdentity]]
+)(implicit messages: play.api.i18n.Messages)
+
+<table class="table" id="topics-table">
+    <thead>
+    <tr>
+        <th>Client Id</th>
+        <th>Client Type</th>
+        <th>Cluster Name</th>
+        <th>Priority</th>
+        <th>Quota Config</th>
+        <th>Quota Real</th>
+        <th>Update Time</th>
+    </tr>
+    </thead>
+    <tbody>
+    @for(quotaIdentity <- quotalist) {
+      <tr>
+          @quotaIdentity.map{ mi => <td>@mi.clientId</td>}.getOrElse{<td> </td>}
+          @quotaIdentity.map{ mi => <td>@mi.clientType</td>}.getOrElse{<td> </td>}
+          @quotaIdentity.map{ mi => <td>@mi.clusterName</td>}.getOrElse{<td> </td>}
+          @quotaIdentity.map{ mi => <td>@mi.priority</td>}.getOrElse{<td> </td>}
+          @quotaIdentity.map{ mi => <td>@mi.quotaConf</td>}.getOrElse{<td> </td>}
+          @quotaIdentity.map{ mi => <td>@mi.quotaReal</td>}.getOrElse{<td> </td>}
+          @quotaIdentity.map{ mi => <td>@mi.updateTime</td>}.getOrElse{<td> </td>}
+      </tr>
+    }
+    </tbody>
+</table>

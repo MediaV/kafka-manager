@@ -6,24 +6,25 @@
 package kafka.manager
 
 import java.util.Properties
-import java.util.concurrent.{LinkedBlockingQueue, TimeUnit, ThreadPoolExecutor}
+import java.util.concurrent.{LinkedBlockingQueue, ThreadPoolExecutor, TimeUnit}
 
 import akka.actor.{ActorPath, ActorSystem, Props}
 import akka.util.Timeout
-import com.typesafe.config.{ConfigFactory, Config}
+import com.typesafe.config.{Config, ConfigFactory}
 import grizzled.slf4j.Logging
-import kafka.manager.actor.{KafkaManagerActorConfig, KafkaManagerActor}
-import kafka.manager.base.LongRunningPoolConfig
+import kafka.manager.actor.{KafkaManagerActor, KafkaManagerActorConfig}
 import kafka.manager.model._
 import ActorModel._
 import kafka.manager.utils.UtilException
 import kafka.manager.utils.zero81.ReassignPartitionErrors.ReplicationOutOfSync
-import kafka.manager.utils.zero81.{ReassignPartitionErrors, ForceReassignmentCommand, ForceOnReplicationOutOfSync}
+import kafka.manager.utils.zero81.{ForceOnReplicationOutOfSync, ForceReassignmentCommand, ReassignPartitionErrors}
 
+import controllers.DataSourceManager
+import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration._
 import scala.reflect.ClassTag
-import scala.util.{Success, Failure, Try}
+import scala.util.{Failure, Success, Try}
 
 /**
  * @author hiral
@@ -112,6 +113,49 @@ object KafkaManager {
 import KafkaManager._
 import akka.pattern._
 import scalaz.{-\/, \/, \/-}
+class DBManager() {
+  def getMirrorMakerListExtended(clusterName: String): Future[ArrayBuffer[Option[MirrorMakerIdentity]]] = {
+    val arrayData = new ArrayBuffer[Option[MirrorMakerIdentity]]()
+    val conn = DataSourceManager.dataSource.getConnection
+    val stmt = conn.createStatement()
+    val sql = "select from_cluster, to_cluster, consumer_group, " +
+        "topic, total_lag, partition_max_lag, process_count, update_time from mirror_info"
+    val rs = stmt.executeQuery(sql)
+    while(rs.next()) {
+      val fromCluster = rs.getString(1)
+      val toCluster = rs.getString(2)
+      val consumerGroup = rs.getString(3)
+      val topic = rs.getString(4)
+      val totalLag = rs.getInt(5)
+      val partitionMaxLag = rs.getInt(6)
+      val processCount = rs.getInt(7)
+      val updateTime = rs.getString(8)
+      arrayData += Option(MirrorMakerIdentity(consumerGroup, fromCluster, toCluster, topic, totalLag, partitionMaxLag, processCount, updateTime))
+    }
+    Future.successful(arrayData)
+  }
+
+  def getQuotaListExtended(clusterName: String): Future[ArrayBuffer[Option[QuotaIdentity]]] = {
+    val arrayData = new ArrayBuffer[Option[QuotaIdentity]]()
+    val conn = DataSourceManager.dataSource.getConnection
+    val stmt = conn.createStatement()
+    val sql = "select client_id, client_type, cluster_name, priority, quota_config, quota_real, update_time " +
+      "from quota_info"
+    val rs = stmt.executeQuery(sql)
+    while(rs.next()) {
+      val clientId = rs.getString(1)
+      val clientType = rs.getString(2)
+      val clusterName = rs.getString(3)
+      val priority = rs.getInt(4)
+      val quotaConfig = rs.getInt(5)
+      val quotaReal = rs.getInt(6)
+      val updateTime = rs.getString(7)
+      arrayData += Option(QuotaIdentity(clientId, clientType, clusterName, priority, quotaConfig, quotaReal, updateTime))
+    }
+    Future.successful(arrayData)
+  }
+}
+
 class KafkaManager(akkaConfig: Config) extends Logging {
   private[this] val system = ActorSystem("kafka-manager-system", akkaConfig)
 

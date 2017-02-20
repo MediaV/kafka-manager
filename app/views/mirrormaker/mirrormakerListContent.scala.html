@@ -1,0 +1,37 @@
+@*
+* Copyright 2015 Yahoo Inc. Licensed under the Apache License, Version 2.0
+* See accompanying LICENSE file.
+*@
+@import scala.collection.mutable.ArrayBuffer
+@(cluster: String,
+        mirrormaker: ArrayBuffer[Option[kafka.manager.model.ActorModel.MirrorMakerIdentity]]
+)(implicit messages: play.api.i18n.Messages)
+
+<table class="table" id="topics-table">
+    <thead>
+    <tr>
+        <th>ConsumerGroup</th>
+        <th>From Cluster</th>
+        <th>To Cluster</th>
+        <th>Topic</th>
+        <th>Total Lag</th>
+        <th>Partition Max Lag</th>
+        <th>Process Count</th>
+        <th>Update Time</th>
+    </tr>
+    </thead>
+    <tbody>
+    @for(mirrormakerIdentity <- mirrormaker) {
+      <tr>
+          @mirrormakerIdentity.map{ mi => <td>@mi.consumerGroup</td>}.getOrElse{<td> </td>}
+          @mirrormakerIdentity.map{ mi => <td>@mi.fromCluster</td>}.getOrElse{<td> </td>}
+          @mirrormakerIdentity.map{ mi => <td>@mi.toCluster</td>}.getOrElse{<td> </td>}
+          @mirrormakerIdentity.map{ mi => <td>@mi.topic</td>}.getOrElse{<td> </td>}
+          @mirrormakerIdentity.map{ mi => <td>@mi.totalLag</td>}.getOrElse{<td> </td>}
+          @mirrormakerIdentity.map{ mi => <td>@mi.partitionMaxLag</td>}.getOrElse{<td> </td>}
+          @mirrormakerIdentity.map{ mi => <td>@mi.processCount</td>}.getOrElse{<td> </td>}
+          @mirrormakerIdentity.map{ mi => <td>@mi.updateTime</td>}.getOrElse{<td> </td>}
+      </tr>
+    }
+    </tbody>
+</table>
