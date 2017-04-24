@@ -16,6 +16,7 @@
         <th>Topic</th>
         <th>Total Lag</th>
         <th>Partition Max Lag</th>
+        <th>Status</th>
         <th>Process Count</th>
         <th>Update Time</th>
     </tr>
@@ -29,6 +30,7 @@
           @mirrormakerIdentity.map{ mi => <td>@mi.topic</td>}.getOrElse{<td> </td>}
           @mirrormakerIdentity.map{ mi => <td>@mi.totalLag</td>}.getOrElse{<td> </td>}
           @mirrormakerIdentity.map{ mi => <td>@mi.partitionMaxLag</td>}.getOrElse{<td> </td>}
+          @mirrormakerIdentity.map{ mi => <td>@mi.status</td>}.getOrElse{<td> </td>}
           @mirrormakerIdentity.map{ mi => <td>@mi.processCount</td>}.getOrElse{<td> </td>}
           @mirrormakerIdentity.map{ mi => <td>@mi.updateTime</td>}.getOrElse{<td> </td>}
       </tr>

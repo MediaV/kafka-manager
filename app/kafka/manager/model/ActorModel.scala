@@ -637,6 +637,7 @@ import scala.language.reflectiveCalls
                                  topic:String,
                                  totalLag:Long,
                                  partitionMaxLag:Long,
+                                 status:Long,
                                  processCount:Long,
                                  updateTime:String)
 

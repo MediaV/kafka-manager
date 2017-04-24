@@ -120,7 +120,7 @@ class DBManager() {
     try {
       val stmt = conn.createStatement()
       val sql = "select from_cluster, to_cluster, consumer_group, " +
-        "topic, total_lag, partition_max_lag, process_count, update_time from mirror_info"
+        "topic, total_lag, partition_max_lag, status, process_count, update_time from mirror_info"
       val rs = stmt.executeQuery(sql)
       while(rs.next()) {
         val fromCluster = rs.getString(1)
@@ -129,9 +129,10 @@ class DBManager() {
         val topic = rs.getString(4)
         val totalLag = rs.getInt(5)
         val partitionMaxLag = rs.getInt(6)
-        val processCount = rs.getInt(7)
-        val updateTime = rs.getString(8)
-        arrayData += Option(MirrorMakerIdentity(consumerGroup, fromCluster, toCluster, topic, totalLag, partitionMaxLag, processCount, updateTime))
+        val status = rs.getInt(7)
+        val processCount = rs.getInt(8)
+        val updateTime = rs.getString(9)
+        arrayData += Option(MirrorMakerIdentity(consumerGroup, fromCluster, toCluster, topic, totalLag, partitionMaxLag, status, processCount, updateTime))
       }
     } catch {
       case ex: Throwable => println(ex)
