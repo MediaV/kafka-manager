@@ -5,7 +5,7 @@
 name := """kafka-manager"""
 
 /* For packaging purposes, -SNAPSHOT MUST contain a digit */
-version := "1.3.2.1"
+version := "1.3.3.6"
 
 scalaVersion := "2.11.8"
 
@@ -90,5 +90,6 @@ rpmRelease := "1"
 rpmVendor := "yahoo"
 rpmUrl := Some("https://github.com/yahoo/kafka-manager")
 rpmLicense := Some("Apache")
+rpmGroup := Some("kafka-manager")
 
 /* End RPM Settings */

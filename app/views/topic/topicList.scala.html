@@ -20,6 +20,7 @@
                 columnDefs: [
                     { type: 'file-size', targets: 7 }
                 ]
+//                "lengthMenu": [[10, 25, 50, -1], [10, 25, 50, "All"]]
             } );
         } );
         </script>
@@ -27,6 +28,11 @@
         <script ype="text/javascript">
         $(document).ready(function() {
             $('#topics-table').DataTable();
+//            $('#topics-table').DataTable(
+//                    {
+//                        "lengthMenu": [[10, 25, 50, -1], [10, 25, 50, "All"]]
+//                    }
+//            );
         } );
         </script>
     }

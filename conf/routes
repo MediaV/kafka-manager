@@ -53,13 +53,14 @@ POST   /clusters/:c/logkafkas/:h/:l/updateConfig            controllers.Logkafka
 POST   /clusters/:c/logkafkas/:h/:l/disableConfig           controllers.Logkafka.handleDisableConfig(c:String, h:String, l:String)
 POST   /clusters/:c/logkafkas/:h/:l/enableConfig            controllers.Logkafka.handleEnableConfig(c:String, h:String, l:String)
 GET    /api/status/:c/brokers                               controllers.api.KafkaStateCheck.brokers(c:String)
+GET    /api/status/:c/brokers/extended                      controllers.api.KafkaStateCheck.brokersExtended(c:String)
 GET    /api/status/:c/topics                                controllers.api.KafkaStateCheck.topics(c:String)
 GET    /api/status/:c/topicIdentities                       controllers.api.KafkaStateCheck.topicIdentities(c:String)
 GET    /api/status/clusters                                 controllers.api.KafkaStateCheck.clusters
 GET    /api/status/:c/:t/underReplicatedPartitions          controllers.api.KafkaStateCheck.underReplicatedPartitions(c:String,t:String)
 GET    /api/status/:c/:t/unavailablePartitions              controllers.api.KafkaStateCheck.unavailablePartitions(c:String,t:String)
-GET    /api/status/:cluster/:consumer/:topic/topicSummary   controllers.api.KafkaStateCheck.topicSummaryAction(cluster:String, consumer:String, topic:String, consumerType:String)
-GET    /api/status/:cluster/:consumer/groupSummary          controllers.api.KafkaStateCheck.groupSummaryAction(cluster:String, consumer:String, consumerType:String)
+GET    /api/status/:cluster/:consumer/:topic/:consumerType/topicSummary   controllers.api.KafkaStateCheck.topicSummaryAction(cluster:String, consumer:String, topic:String, consumerType:String)
+GET    /api/status/:cluster/:consumer/:consumerType/groupSummary          controllers.api.KafkaStateCheck.groupSummaryAction(cluster:String, consumer:String, consumerType:String)
 GET    /api/status/:cluster/consumersSummary                controllers.api.KafkaStateCheck.consumersSummaryAction(cluster:String)
 
 # Versioned Assets
@@ -70,5 +71,9 @@ GET    /assets/*file                                        controllers.Assets.a
 
 # WebJars
 GET    /webjars/*file                                       controllers.WebJarAssets.at(file)
+
+# Ping / Health Check
+GET    /api/health                                          controllers.ApiHealth.ping
+
 GET    /clusters/:c/mirrormaker                             controllers.MirrorMaker.mirrormakers(c:String)
 GET    /clusters/:c/quota                                   controllers.Quota.quota(c:String)

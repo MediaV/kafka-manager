@@ -15,7 +15,6 @@ import kafka.manager.utils.zero81.ForceReassignmentCommand
 import org.joda.time.DateTime
 
 import scala.collection.immutable.Queue
-import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
 import scala.util.{Failure, Success, Try}
 import scalaz.{NonEmptyList, Validation}
@@ -46,12 +45,14 @@ object ActorModel {
   case class BVGetTopicMetrics(topic: String) extends BVRequest
   case object BVGetBrokerMetrics extends BVRequest
   case class BVGetBrokerTopicPartitionSizes(topic: String) extends BVRequest
-  case class BVView(topicPartitions: Map[TopicIdentity, IndexedSeq[Int]], clusterContext: ClusterContext,
+  case class BrokerTopicInfo(partitions: IndexedSeq[Int], partitionsAsLeader: IndexedSeq[Int])
+  case class BVView(topicPartitions: Map[TopicIdentity, BrokerTopicInfo], clusterContext: ClusterContext,
                     metrics: Option[BrokerMetrics] = None,
                     messagesPerSecCountHistory: Option[Queue[BrokerMessagesPerSecCount]] = None,
                     stats: Option[BrokerClusterStats] = None) extends QueryResponse {
     def numTopics : Int = topicPartitions.size
-    def numPartitions : Int = topicPartitions.values.foldLeft(0)((acc,i) => acc + i.size)
+    def numPartitions : Int = topicPartitions.values.foldLeft(0)((acc,i) => acc + i.partitions.size)
+    def numPartitionsAsLeader : Int = topicPartitions.values.foldLeft(0)((acc,i) => acc + i.partitionsAsLeader.size)
   }
 
   case class BVUpdateTopicMetricsForBroker(id: Int, metrics: IndexedSeq[(String,BrokerMetrics)]) extends CommandRequest
@@ -328,7 +329,7 @@ import scala.language.reflectiveCalls
     }
   }
 
-  case class BrokerTopicPartitions(id: Int, partitions: IndexedSeq[Int], isSkewed: Boolean)
+  case class BrokerTopicPartitions(id: Int, partitions: IndexedSeq[Int], isSkewed: Boolean, leaders: IndexedSeq[Int], isLeaderSkewed: Boolean)
 
   case class PartitionOffsetsCapture(updateTimeMillis: Long, offsetsMap: Map[Int, Long])
 
@@ -368,16 +369,23 @@ import scala.language.reflectiveCalls
     val replicationFactor : Int = partitionsIdentity.head._2.replicas.size
 
     val partitionsByBroker : IndexedSeq[BrokerTopicPartitions] = {
-      val brokerPartitionsMap : Map[Int, Iterable[Int]] =
-        partitionsIdentity.toList.flatMap(t => t._2.isr.map(i => (i,t._2.partNum))).groupBy(_._1).mapValues(_.map(_._2))
+      val brokerPartitionsMap : Map[Int, Iterable[(Int, Boolean)]] =
+        partitionsIdentity
+          .toList
+          .flatMap(t => t._2.isr.map(i => (i,t._2.partNum, i == t._2.leader)))
+          .groupBy(_._1)
+          .mapValues(l => l.map(t => (t._2, t._3)))
 
       val brokersForTopic = brokerPartitionsMap.keySet.size
       val avgPartitionsPerBroker : Double = Math.ceil((1.0 * partitions) / brokersForTopic * replicationFactor)
+      val avgPartitions : Double = Math.ceil((1.0 * partitions) / brokersForTopic)
 
       brokerPartitionsMap.map {
         case (brokerId, brokerPartitions)=>
-          BrokerTopicPartitions(brokerId, brokerPartitions.toIndexedSeq.sorted,
-            brokerPartitions.size > avgPartitionsPerBroker)
+          val partitions = brokerPartitions.view.map(_._1).toIndexedSeq.sorted
+          val leaders = brokerPartitions.view.filter(_._2).map(_._1).toIndexedSeq.sorted
+          BrokerTopicPartitions(brokerId, partitions,
+            brokerPartitions.size > avgPartitionsPerBroker, leaders, leaders.size > avgPartitions)
       }.toIndexedSeq.sortBy(_.id)
     }
 
@@ -402,6 +410,12 @@ import scala.language.reflectiveCalls
       100 // everthing is spreaded if nothing has to be spreaded
     }
 
+    val brokersLeaderSkewPercentage : Int = {
+      if(topicBrokers > 0)
+        (100 * partitionsByBroker.count(_.isLeaderSkewed)) / topicBrokers
+      else 0
+    }
+
     val producerRate: String = BigDecimal(partitionsIdentity.map(_._2.rateOfChange.getOrElse(0D)).sum).setScale(2, BigDecimal.RoundingMode.HALF_UP).toString()
   }
 
@@ -412,7 +426,8 @@ import scala.language.reflectiveCalls
     import org.json4s._
     import org.json4s.jackson.Serialization
 
-import scala.language.reflectiveCalls
+    import scala.language.reflectiveCalls
+    import scala.concurrent.duration._
 
     implicit val formats = Serialization.formats(FullTypeHints(List(classOf[TopicIdentity])))
     // Adding a write method to transform/sort the partitionsIdentity to be more readable in JSON and include Topic Identity vals
@@ -459,19 +474,29 @@ import scala.language.reflectiveCalls
       partMap.map { case (partition, replicas) =>
         val partitionNum = partition.toInt
         // block on the futures that hold the latest produced offset in each partition
-        val partitionOffsets: Option[PartitionOffsetsCapture] = Await.ready(td.partitionOffsets, Duration.Inf).value.get match {
-          case Success(offsetMap) =>
-            Option(offsetMap)
-          case Failure(e) =>
-            None
-        }
-
-        val previousPartitionOffsets: Option[PartitionOffsetsCapture] = tdPrevious.flatMap {
-          ptd => Await.ready(ptd.partitionOffsets, Duration.Inf).value.get match {
+        val partitionOffsets: Option[PartitionOffsetsCapture] = Try {
+          Await.ready(td.partitionOffsets, 2 second).value.get match {
             case Success(offsetMap) =>
               Option(offsetMap)
             case Failure(e) =>
               None
+          }
+        } match  {
+          case Failure(e) => None
+          case Success(r) => r
+        }
+
+        val previousPartitionOffsets: Option[PartitionOffsetsCapture] = tdPrevious.flatMap {
+          ptd => Try {
+            Await.ready(ptd.partitionOffsets, 2 second).value.get match {
+              case Success(offsetMap) =>
+                Option(offsetMap)
+              case Failure(e) =>
+                None
+            }
+          } match {
+            case Failure(e) => None
+            case Success(r) => r
           }
         }
         
@@ -566,14 +591,19 @@ import scala.language.reflectiveCalls
     lazy val totalLag : Option[Long] = {
       // only defined if every partition has a latest offset
       if (partitionLatestOffsets.values.size == numPartitions && partitionLatestOffsets.size == numPartitions) {
-          Some(partitionLatestOffsets.values.sum - partitionOffsets.values.sum)
+          val activePartitionsOffsets = partitionOffsets.filter(ptLtOffset => ptLtOffset._2 != -1)
+          Some(partitionLatestOffsets.filterKeys(activePartitionsOffsets.keySet).values.sum -
+              activePartitionsOffsets.values.sum)
       } else None
     }
     def topicOffsets(partitionNum: Int) : Option[Long] = partitionLatestOffsets.get(partitionNum)
 
     def partitionLag(partitionNum: Int) : Option[Long] = {
-      topicOffsets(partitionNum).flatMap{topicOffset =>
-        partitionOffsets.get(partitionNum).map(topicOffset - _)}
+      if (partitionOffsets.get(partitionNum).getOrElse(-1) != -1) {
+        topicOffsets(partitionNum).flatMap { topicOffset =>
+          partitionOffsets.get(partitionNum).map(topicOffset - _)
+        }
+      } else None
     }
 
     // Percentage of the partitions that have an owner
@@ -587,17 +617,25 @@ import scala.language.reflectiveCalls
   }
 
   object ConsumedTopicState {
+    import scala.concurrent.duration._
+
     def from(ctd: ConsumedTopicDescription, clusterContext: ClusterContext): ConsumedTopicState = {
       val partitionOffsetsMap = ctd.partitionOffsets.getOrElse(Map.empty)
       val partitionOwnersMap = ctd.partitionOwners.getOrElse(Map.empty)
       // block on the futures that hold the latest produced offset in each partition
       val topicOffsetsOptMap: Map[Int, Long]= ctd.topicDescription.map{td: TopicDescription =>
-        Await.ready(td.partitionOffsets, Duration.Inf).value.get match {
-        case Success(offsetMap) =>
-          offsetMap.offsetsMap
-        case Failure(e) =>
-          Map.empty[Int, Long]
-      }}.getOrElse(Map.empty)
+        Try {
+          Await.ready(td.partitionOffsets, 2 second).value.get match {
+            case Success(offsetMap) =>
+              offsetMap.offsetsMap
+            case Failure(e) =>
+              Map.empty[Int, Long]
+          }
+        } match {
+          case Failure(e) => Map.empty[Int, Long]
+          case Success(r) => r
+        }
+      }.getOrElse(Map.empty)
 
       ConsumedTopicState(
         ctd.consumer, 

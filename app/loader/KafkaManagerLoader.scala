@@ -41,9 +41,9 @@ class ApplicationComponents(context: Context) extends BuiltInComponentsFromConte
   private[this] lazy val kafkaStateCheckC = new controllers.api.KafkaStateCheck(messagesApi, kafkaManagerContext)
   private[this] lazy val assetsC = new controllers.Assets(httpErrorHandler)
   private[this] lazy val webJarsAssetsC = new controllers.WebJarAssets(httpErrorHandler, context.initialConfiguration, context.environment)
+  private[this] lazy val apiHealthC = new controllers.ApiHealth(messagesApi)
   private[this] lazy val mirrorMakerC = new controllers.MirrorMaker(messagesApi, kafkaManagerContext)
   private[this] lazy val quotaC = new controllers.Quota(messagesApi, kafkaManagerContext)
-
 
   override lazy val httpFilters = Seq(BasicAuthenticationFilter(context.initialConfiguration))
 
@@ -60,6 +60,7 @@ class ApplicationComponents(context: Context) extends BuiltInComponentsFromConte
     kafkaStateCheckC, 
     assetsC,
     webJarsAssetsC,
+    apiHealthC,
     mirrorMakerC,
     quotaC
   ).withPrefix(context.initialConfiguration.getString("play.http.context").orNull)
