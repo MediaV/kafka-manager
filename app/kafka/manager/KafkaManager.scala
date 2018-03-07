@@ -250,15 +250,20 @@ class KafkaManager(akkaConfig: Config) extends Logging {
   {
     implicit val ec = apiExecutionContext
     system.actorSelection(kafkaManagerActor).ask(msg).map {
-      case err: ActorErrorResponse => -\/(ApiError.from(err))
+      case err: ActorErrorResponse => 
+        error(s"Failed on input : $msg")
+        -\/(ApiError.from(err))
       case o: Output =>
         Try {
           fn(o)
         } match {
-          case Failure(t) => -\/(ApiError.fromThrowable(t))
+          case Failure(t) => 
+            error(s"Failed on input : $msg")
+            -\/(ApiError.fromThrowable(t))
           case Success(foutput) => \/-(foutput)
         }
     }.recover { case t: Throwable =>
+      error(s"Failed on input : $msg", t)
       -\/(ApiError.fromThrowable(t))
     }
   }
@@ -304,6 +309,7 @@ class KafkaManager(akkaConfig: Config) extends Logging {
                  pollConsumers: Boolean,
                  filterConsumers: Boolean,
                  tuning: Option[ClusterTuning],
+                 securityProtocol: String,
                  logkafkaEnabled: Boolean = false,
                  activeOffsetCacheEnabled: Boolean = false,
                  displaySizeEnabled: Boolean = false): Future[ApiError \/ Unit] =
@@ -313,6 +319,7 @@ class KafkaManager(akkaConfig: Config) extends Logging {
       version,
       zkHosts,
       tuning = tuning,
+      securityProtocol = securityProtocol,
       jmxEnabled = jmxEnabled,
       jmxUser = jmxUser,
       jmxPass = jmxPass,
@@ -337,6 +344,7 @@ class KafkaManager(akkaConfig: Config) extends Logging {
                     pollConsumers: Boolean,
                     filterConsumers: Boolean,
                     tuning: Option[ClusterTuning],
+                    securityProtocol: String,
                     logkafkaEnabled: Boolean = false,
                     activeOffsetCacheEnabled: Boolean = false,
                     displaySizeEnabled: Boolean = false): Future[ApiError \/ Unit] =
@@ -346,6 +354,7 @@ class KafkaManager(akkaConfig: Config) extends Logging {
       version,
       zkHosts,
       tuning = tuning,
+      securityProtocol = securityProtocol,
       jmxEnabled = jmxEnabled,
       jmxUser = jmxUser,
       jmxPass = jmxPass,
